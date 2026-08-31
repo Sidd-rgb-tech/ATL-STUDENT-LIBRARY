@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b1020">
+<title>Unify Studio 0.4 — Intent Programming</title>
+<style>
+:root{
+  --bg:#070b14;--panel:#0d1320;--panel2:#111a2b;--panel3:#162139;--border:#26344d;
+  --text:#e8eef9;--muted:#8e9bb1;--accent:#60a5fa;--good:#34d399;--warn:#fbbf24;--bad:#fb7185;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}
+button,textarea{font:inherit}
+button{border:0}
+.app{height:100%;display:flex;flex-direction:column}
+.topbar{height:70px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 18px;border-bottom:1px solid var(--border);background:rgba(13,19,32,.96);backdrop-filter:blur(14px)}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.logo{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:20px;font-weight:900;color:white;background:linear-gradient(135deg,#0ea5e9,#6366f1);box-shadow:0 12px 34px rgba(14,165,233,.18)}
+.brand-title{font-size:16px;font-weight:850;line-height:1.15;white-space:nowrap}.brand-title span{font-size:11px;color:#64748b;margin-left:6px}
+.brand-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.toolbar{display:flex;align-items:center;gap:9px}.status{font-size:11px;font-weight:800;padding:7px 10px;border:1px solid rgba(148,163,184,.17);border-radius:9px;background:#0a111e;color:var(--good);white-space:nowrap}
+.run{cursor:pointer;padding:10px 15px;border-radius:10px;color:white;font-weight:850;background:linear-gradient(90deg,#10b981,#14b8a6);box-shadow:0 8px 24px rgba(16,185,129,.16);transition:.15s transform,.15s filter}.run:hover{filter:brightness(1.07)}.run:active{transform:scale(.97)}
+.workspace{flex:1;min-height:0;display:grid;grid-template-columns:minmax(360px,46%) 1fr}
+.panel{min-width:0;min-height:0;display:flex;flex-direction:column}.source{background:var(--panel);border-right:1px solid var(--border)}.preview{background:#060a12}
+.panel-head{height:42px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 13px;border-bottom:1px solid rgba(148,163,184,.12);background:var(--panel3);font-size:10px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:#9aa7bb}.badge{font-size:9px;letter-spacing:.02em;color:#60d7ff;background:rgba(2,132,199,.12);border:1px solid rgba(56,189,248,.25);padding:4px 7px;border-radius:7px}
+.editor-wrap{flex:1;min-height:0;overflow:hidden}.editor{display:block;width:100%;height:100%;resize:none;outline:none;border:0;background:#080d17;color:#a5dbff;padding:18px;font:13px/1.8 "SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;tab-size:2;caret-color:#7dd3fc}.editor::selection{background:rgba(96,165,250,.18)}
+.source-footer{flex:none;display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:8px 10px;border-top:1px solid var(--border);font-size:10px;color:#67758b}.example{cursor:pointer;padding:3px 6px;border-radius:6px;color:#66c8f4;background:transparent}.example:hover{background:rgba(96,165,250,.09)}
+.preview-body{flex:1;min-height:0;display:flex;flex-direction:column;padding:12px;gap:10px}.frame{flex:1;min-height:240px;border:1px solid #dbe3ef;border-radius:13px;overflow:hidden;background:white;box-shadow:0 24px 80px rgba(0,0,0,.3)}.frame iframe{width:100%;height:100%;border:0;display:block;background:white}.inspector{flex:none;border:1px solid var(--border);border-radius:11px;overflow:hidden;background:#0a111d}.inspector summary{cursor:pointer;list-style:none;padding:9px 11px;font-size:10px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:#8796aa;user-select:none}.inspector summary::-webkit-details-marker{display:none}.inspector pre{margin:0;padding:0 11px 11px;max-height:230px;overflow:auto;white-space:pre-wrap;color:#9aa9be;font:11px/1.55 "SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace}
+.help{padding:7px 11px;border-top:1px solid rgba(148,163,184,.1);font-size:10px;color:#6f7e95}.kbd{padding:1px 4px;border:1px solid #38465d;border-radius:4px;background:#0e1624;color:#a9b7ca}
+@media(max-width:900px){body{overflow:auto}.app{height:auto;min-height:100%}.workspace{grid-template-columns:1fr}.source{height:50vh;min-height:350px;border-right:0;border-bottom:1px solid var(--border)}.preview{height:70vh;min-height:520px}.toolbar .status{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">U</div>
+      <div>
+        <div class="brand-title">Unify Studio <span>0.4</span></div>
+        <div class="brand-sub">Intent-based programming — describe what you want</div>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div id="status" class="status">Ready</div>
+      <button id="run" class="run" type="button">▶&nbsp; Run Preview</button>
+    </div>
+  </header>
+  <main class="workspace">
+    <section class="panel source">
+      <div class="panel-head"><span>⚡ Unify Source</span><span class="badge">1–7 Semantic Grammar</span></div>
+      <div class="editor-wrap">
+        <textarea id="editor" class="editor" spellcheck="false" aria-label="Unify source">Create a page.
+Give the page a calm dark blue background.
+Put everything in the middle.
+
+Create a card.
+Make the card look expensive and minimal.
+Give it lots of breathing room.
+
+Create a heading saying "Welcome to Unify".
+Make the heading stand out.
+
+Create a paragraph saying "Programming should feel like explaining an idea to a person.".
+Make the text easy to read.
+
+Create a button saying "Click Me".
+Make the button big and friendly.
+Make the button blue with white text.
+
+When someone hovers over the button, make it a little brighter and lift it slightly.
+When the button is pressed, make it shrink slightly so it feels clickable.
+When the button is clicked, change its text to "Ouch!".
+When the button is clicked, change its background to red.
+
+On a phone, stack everything underneath each other and keep it comfortable.</textarea>
+      </div>
+      <div class="source-footer">
+        <span>Examples:</span>
+        <button class="example" data-example="button" type="button">button</button>
+        <button class="example" data-example="card" type="button">card</button>
+        <button class="example" data-example="layout" type="button">layout</button>
+        <span style="margin-left:auto">Run <span class="kbd">Ctrl</span>+<span class="kbd">Enter</span></span>
+      </div>
+    </section>
+    <section class="panel preview">
+      <div class="panel-head"><span>🖥️ Live Preview</span><span id="stats">0 intents · 0 components</span></div>
+      <div class="preview-body">
+        <div class="frame"><iframe id="output" title="Unify Preview" sandbox="allow-scripts"></iframe></div>
+        <details class="inspector" open>
+          <summary>Semantic understanding</summary>
+          <pre id="semantic"></pre>
+        </details>
+        <div class="help">Unify source is intent-only. CSS and JavaScript are generated implementation details.</div>
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+'use strict';
+
+/* -----------------------------------------------------------------------
+   UNIFY 0.4 REBUILT
+   -----------------------------------------------------------------------
+   Design goals:
+   - deterministic parsing
+   - semantic component tree
+   - explicit target resolution
+   - intent > implementation
+   - preview isolated in sandboxed iframe
+   - no external dependencies
+   ----------------------------------------------------------------------- */
+
+const COLOR_TABLE = Object.freeze({
+  'calm dark blue':'#172554','dark blue':'#172554','navy':'#172554','midnight blue':'#0f172a',
+  'almost black':'#0b1220','black':'#111827','white':'#ffffff',
+  'blue':'#3b82f6','bright blue':'#2563eb','light blue':'#dbeafe','sky blue':'#38bdf8',
+  'red':'#ef4444','soft red':'#fee2e2','green':'#22c55e','soft green':'#dcfce7',
+  'purple':'#8b5cf6','violet':'#8b5cf6','indigo':'#6366f1','teal':'#14b8a6','cyan':'#06b6d4',
+  'orange':'#f97316','yellow':'#eab308','gold':'#f59e0b','golden':'#f59e0b','golden yellow':'#f59e0b',
+  'pink':'#ec4899','soft pink':'#fce7f3','gray':'#64748b','grey':'#64748b','soft gray':'#e2e8f0',
+  'cream':'#fff7ed','transparent':'transparent'
+});
+
+const TYPE_ALIASES = Object.freeze({paragraph:'text',heading:'heading',title:'heading',body:'text',copy:'text'});
+const TYPES = new Set(['page','card','button','heading','text','image','input','link','list']);
+const CONTAINERS = new Set(['page','card']);
+
+const DEFAULTS = Object.freeze({
+  page:{background:'#f8fafc',color:'#0f172a'},
+  card:{background:'#fff',color:'#0f172a',radius:22,padding:28,shadow:'0 24px 70px rgba(15,23,42,.14)'},
+  heading:{color:'#0f172a',size:36,weight:800,line:1.14},
+  text:{color:'#475569',size:16,weight:450,line:1.72},
+  button:{background:'#3b82f6',color:'#fff',radius:14,padding:14,size:16,weight:750},
+  image:{background:'#e2e8f0',color:'#475569',radius:18,padding:18},
+  input:{background:'#fff',color:'#0f172a',radius:12,padding:13,size:16},
+  link:{color:'#2563eb',size:16,weight:700},
+  list:{color:'#475569',size:16,line:1.7}
+});
+
+const EXAMPLES = Object.freeze({
+  button:`Create a page.\nPut everything in the middle.\n\nCreate a button saying "Play".\nMake the button big and friendly.\nMake the button blue with white text.\n\nWhen someone hovers over the button, make it a little brighter and lift it slightly.\nWhen the button is pressed, make it shrink slightly.\nWhen the button is clicked, change its text to "Playing!".`,
+  card:`Create a page.\nGive the page a calm dark blue background.\nPut everything in the middle.\n\nCreate a card.\nMake the card look expensive and minimal.\nGive it lots of breathing room.\n\nCreate a heading saying "Your Space".\nMake the heading stand out.\n\nCreate a paragraph saying "Everything should feel simple.".\nMake the text easy to read.`,
+  layout:`Create a page.\nGive the page a soft gray background.\n\nCreate a card.\nMake the card modern and spacious.\n\nCreate a heading saying "Dashboard".\nMake the heading stand out.\n\nCreate a paragraph saying "Welcome back. Here is your overview.".\nMake the text easy to read.\n\nCreate a button saying "Continue".\nMake the button wide and friendly.\nMake the button purple with white text.\n\nWhen someone hovers over the button, make it brighter and lift it slightly.\nWhen the button is clicked, change its background to green.\n\nOn a phone, stack everything underneath each other and keep it comfortable.`
+});
+
+function normalize(s){
+  return String(s ?? '').toLowerCase().replace(/[“”]/g,'"').replace(/\s+/g,' ').trim();
+}
+function quoted(line){
+  const out=[]; const rx=/"((?:\\.|[^"\\])*)"/g; let m;
+  while((m=rx.exec(line))){
+    try{out.push(JSON.parse('"'+m[1]+'"'));}catch{out.push(m[1]);}
+  }
+  return out;
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function json(s){return JSON.stringify(String(s));}
+function canonicalType(t){return TYPE_ALIASES[t]||t;}
+function newNode(type,props={},line=1){return {id:'',type,props,children:[],parent:null,line};}
+function add(parent,child){child.parent=parent;parent.children.push(child);}
+function walk(root){const all=[];(function visit(n){all.push(n);n.children.forEach(visit)})(root);return all;}
+function last(nodes,type){for(let i=nodes.length-1;i>=0;i--)if(nodes[i].type===type)return nodes[i];return null;}
+function nearestContainer(n){let x=n;while(x){if(CONTAINERS.has(x.type))return x;x=x.parent}return null;}
+
+function findColor(text){
+  const s=normalize(text);
+  const hex=s.match(/#[0-9a-f]{3,8}\b/i); if(hex)return hex[0];
+  const keys=Object.keys(COLOR_TABLE).sort((a,b)=>b.length-a.length);
+  for(const k of keys)if(s.includes(k))return COLOR_TABLE[k];
+  return null;
+}
+function colorAfterPhrase(line,phrase){
+  const s=normalize(line); const idx=s.indexOf(phrase); if(idx<0)return null; return findColor(s.slice(idx+phrase.length));
+}
+function colorsInClause(line){
+  const s=normalize(line);
+  const hexes=s.match(/#[0-9a-f]{3,8}\b/gi)||[];
+  const keys=Object.keys(COLOR_TABLE).sort((a,b)=>b.length-a.length);
+  const found=[];
+  for(const k of keys){ if(s.includes(k)) found.push({key:k,color:COLOR_TABLE[k],index:s.indexOf(k)}); }
+  for(const h of hexes) found.push({key:h,color:h,index:s.indexOf(h)});
+  return found.sort((a,b)=>a.index-b.index);
+}
+function scaleFromWords(s){
+  const x=normalize(s);
+  if(/(?:much|way|really|far)\s+(?:bigger|larger)/.test(x))return 1.22;
+  if(/(?:a little|slightly|a bit)\s+(?:bigger|larger)/.test(x))return 1.06;
+  if(/\b(?:big|large|bigger|larger)\b/.test(x))return 1.12;
+  if(/(?:much|way|really|far)\s+(?:smaller|tiny)/.test(x))return .80;
+  if(/(?:a little|slightly|a bit)\s+smaller/.test(x))return .94;
+  if(/\b(?:small|smaller)\b/.test(x))return .90;
+  if(/\bhuge\b/.test(x))return 1.28;
+  return null;
+}
+function has(s,patterns){return patterns.some(p=>p.test(s));}
+
+function styleIntent(node,line){
+  const s=normalize(line), p=node.props; let changed=false;
+
+  // Compound color intent: “blue with white text” or
+  // “with blue background and white text”. The first color before the
+  // explicit text clause is the background; the text clause wins for fg.
+  const textClause=s.match(/\bwith\s+(.+?)\s+text\b/);
+  if(textClause){
+    const fg=findColor(textClause[1]);
+    const before=s.slice(0,textClause.index);
+    const bg=findColor(before);
+    if(bg){p.background=bg;changed=true;}
+    if(fg){p.color=fg;changed=true;}
+  }
+
+
+  if(/background|backdrop|bg\b/.test(s)){
+    const c=colorAfterPhrase(line,'background')||colorAfterPhrase(line,'backdrop')||null;
+    if(c){p.background=c;changed=true;}
+  }
+  if(/\btext\b|font/.test(s)){
+    const c=colorAfterPhrase(line,'text color')||colorAfterPhrase(line,'text')||colorAfterPhrase(line,'font')||null;
+    if(c && !(/background\s+to\s+$/.test(s))){p.color=c;changed=true;}
+  }
+  if(!p.background&&!p.color){
+    const c=findColor(s);
+    if(c){
+      if(['page','card','button','image','input'].includes(node.type))p.background=c;else p.color=c;
+      changed=true;
+    }
+  }
+
+  if(has(s,[/easy to read/,/comfortable to read/,/readable/,/clear typography/,/clear text/])){p.readable=true;changed=true;}
+  if(has(s,[/stand out/,/emphasize/,/prominent/,/attention grabbing/,/make .* pop/])){p.emphasis=true;changed=true;}
+  if(has(s,[/lots of breathing room/,/plenty of breathing room/,/lots of space/,/very spacious/])){p.space='xl';changed=true;}
+  else if(has(s,[/more breathing room/,/more space/,/spacious/,/comfortable spacing/,/enough space/])){p.space='lg';changed=true;}
+  if(has(s,[/rounded corners/,/rounded/])){p.rounded=true;changed=true;}
+  if(has(s,[/soft(?:er)? corners?/,/gentle corners?/])){p.softCorners=true;changed=true;}
+  if(has(s,[/no shadow/,/flat/])){p.shadow='none';changed=true;}
+  else if(has(s,[/strong shadow/,/dramatic shadow/,/deep shadow/])){p.shadow='strong';changed=true;}
+  else if(has(s,[/soft shadow/,/subtle shadow/])){p.shadow='soft';changed=true;}
+
+  const scale=scaleFromWords(s); if(scale){p.scale=(p.scale||1)*scale;changed=true;}
+  if(has(s,[/full width/,/really wide/,/stretch across/,/make .* wide/])){p.wide=true;changed=true;}
+  if(has(s,[/in the middle/,/center everything/,/keep .* centered/,/center it/])){p.alignment='center';changed=true;}
+  if(has(s,[/align left/,/left aligned/])){p.alignment='left';changed=true;}
+  if(has(s,[/align right/,/right aligned/])){p.alignment='right';changed=true;}
+
+  const personality=[];
+  if(/\bmodern\b/.test(s))personality.push('modern');
+  if(/playful|fun|cheerful/.test(s))personality.push('playful');
+  if(/expensive|minimal|luxurious|premium|elegant/.test(s))personality.push('luxury');
+  if(/friendly|welcoming|approachable/.test(s))personality.push('friendly');
+  if(/calm|peaceful|relaxed/.test(s))personality.push('calm');
+  if(/bold|strong/.test(s) && !/shadow/.test(s))personality.push('bold');
+  if(personality.length){p.personalities=[...(p.personalities||[]),...personality];changed=true;}
+  return changed;
+}
+
+function resolveColor(line){
+  const s=normalize(line);
+  const direct=colorAfterPhrase(line,'background to')||colorAfterPhrase(line,'background')||colorAfterPhrase(line,'turn');
+  return direct || findColor(s) || null;
+}
+
+function parse(source){
+  const root=newNode('page',{name:'page'},1); root.id='u1';
+  const nodes=[root]; let idSeq=1; let current=root;
+  const warnings=[],errors=[];
+
+  function create(type,props,line,parent){
+    const n=newNode(type,props,line);n.id='u'+(++idSeq);add(parent,n);nodes.push(n);current=n;return n;
+  }
+  function explicitTarget(s){
+    const m=s.match(/\b(?:the\s+)?(first|second|third|fourth|last)\s+(card|button|heading|paragraph|text|image|input|link|list)\b/);
+    if(!m)return null;
+    const type=canonicalType(m[2]);
+    const matches=nodes.filter(n=>n.type===type);
+    if(!matches.length)return null;
+    if(m[1]==='last')return matches[matches.length-1];
+    const index={first:0,second:1,third:2,fourth:3}[m[1]];
+    return matches[index]||null;
+  }
+  function explicitType(s){
+    const m=s.match(/\b(?:the\s+)?(page|card|button|heading|paragraph|text|image|input|link|list)\b/);
+    return m?canonicalType(m[1]):null;
+  }
+  function targetFor(line){
+    const s=normalize(line);
+    const ordinal=explicitTarget(s);
+    if(ordinal)return ordinal;
+    const type=explicitType(s);
+    if(type){
+      if(type==='page')return root;
+      return last(nodes,type)||null;
+    }
+    if(/\b(?:it|this|that)\b/.test(s))return current;
+    return current||root;
+  }
+  function parentForNew(){
+    const c=nearestContainer(current)||root;
+    return c.type==='page' ? c : c;
+  }
+
+  const lines=String(source||'').split(/\r?\n/);
+  for(let i=0;i<lines.length;i++){
+    const lineNo=i+1;const raw=lines[i];const line=raw.trim();if(!line||line.startsWith('#'))continue;
+    const s=normalize(line), values=quoted(line);
+
+    /* creation */
+    if(/^create\s+(?:a\s+)?page\b/.test(s)){
+      current=root;styleIntent(root,line);continue;
+    }
+    const cm=s.match(/^create\s+(?:another\s+)?(?:a\s+)?(card|button|heading|paragraph|text|image|input|link|list)\b/);
+    if(cm){
+      const type=canonicalType(cm[1]);
+      let parent=parentForNew();
+      if(type==='card' && nearestContainer(current)?.type==='card')parent=nearestContainer(current).parent||root;
+      const props={}; if(values[0])props.text=values[0];
+      const n=create(type,props,lineNo,parent);styleIntent(n,line);continue;
+    }
+
+    /* layout intent */
+    if(/^put\s+everything\s+in\s+the\s+middle|^center\s+everything|^center\s+the\s+page/.test(s)){
+      root.props.layout={...(root.props.layout||{}),align:'center',justify:'center'};current=root;continue;
+    }
+    if(/^(?:put|stack)\s+(?:these|them|everything)\s+vertically/.test(s)){
+      const c=nearestContainer(current)||root;c.props.layout={...(c.props.layout||{}),direction:'column'};continue;
+    }
+    if(/^(?:put|place)\s+(?:the\s+)?(?:three|four|two|all)\s+(?:cards|items|buttons)\s+(?:next to each other|side by side|in a row)/.test(s)){
+      const c=nearestContainer(current)||root;c.props.layout={...(c.props.layout||{}),direction:'row',wrap:true};continue;
+    }
+    const split=s.match(/^(?:put|place)\s+(?:the\s+)?(image|text|paragraph|heading|button)\s+(?:on|to)\s+the\s+left\s+and\s+(?:the\s+)?(image|text|paragraph|heading|button)\s+(?:on|to)\s+the\s+right/);
+    if(split){
+      const c=nearestContainer(current)||root;c.props.layout={...(c.props.layout||{}),direction:'row',split:[canonicalType(split[1]),canonicalType(split[2])],wrap:false};continue;
+    }
+    if(/(?:on|for)\s+(?:a|the)\s+(?:phone|mobile|small screen)/.test(s)){
+      const c=nearestContainer(current)||root;c.props.responsive={...(c.props.responsive||{}),stack: /stack|underneath|below/.test(s),comfortable:/comfortable|fit/.test(s)};continue;
+    }
+
+    /* events */
+    if(/^when\s+(?:someone\s+)?hovers?\s+over\s+/.test(s) || /^on\s+hover\b/.test(s)){
+      const t=targetFor(line); if(!t){warnings.push(`Line ${lineNo}: no hover target found.`);continue;}
+      const e=t.props.events??={};e.hover??={};
+      if(/brighter|lighter/.test(s))e.hover.brightness=/little|slightly|a bit/.test(s)?1.06:1.10;
+      if(/darker/.test(s))e.hover.brightness=/little|slightly|a bit/.test(s)?.94:.90;
+      if(/lift|float|floating|rise/.test(s))e.hover.lift=/little|slightly|a bit/.test(s)?3:6;
+      if(/grow|bigger|larger/.test(s))e.hover.scale=1.03;
+      if(!Object.keys(e.hover).length)warnings.push(`Line ${lineNo}: hover was understood, but no visible action was named.`);
+      continue;
+    }
+    if(/^when\s+(?:the\s+)?(?:button|card|heading|text|paragraph|image|input|link|list)\s+is\s+pressed/.test(s)){
+      const t=targetFor(line);if(!t)continue;const e=t.props.events??={};e.press??={};
+      if(/shrink|smaller/.test(s))e.press.scale=/little|slightly|a bit/.test(s)?.97:.94;
+      continue;
+    }
+    if(/^when\s+(?:the\s+)?(?:button|card|heading|text|paragraph|image|input|link|list)\s+is\s+clicked/.test(s)){
+      const t=targetFor(line);if(!t)continue;const e=t.props.events??={};e.click??=[];const action={};
+      if(/change\s+its\s+text\s+to|make\s+it\s+say/.test(s))action.text=values[0]||'Clicked';
+      if(/change\s+its\s+background\s+to|make\s+it\s+turn/.test(s)){const c=resolveColor(s);if(c)action.background=c;}
+      if(/hide\s+it/.test(s))action.display='none';
+      if(/show\s+it/.test(s))action.display='';
+      if(Object.keys(action).length)e.click.push(action);else warnings.push(`Line ${lineNo}: click was understood, but no action was named.`);
+      continue;
+    }
+
+    /* generic semantic style */
+    const t=targetFor(line);if(!t){warnings.push(`Line ${lineNo}: could not determine a component for “${line}”.`);continue;}
+    if(!styleIntent(t,line) && !/^(?:use|give|make|keep|put|place|move|turn|set)/.test(s))warnings.push(`Line ${lineNo}: intent not recognized: “${line}”.`);
+  }
+  root.props.background=root.props.background||DEFAULTS.page.background;
+  root.props.color=root.props.color||DEFAULTS.page.color;
+  return {root,nodes:walk(root),warnings,errors};
+}
+
+function design(node){
+  const d={...(DEFAULTS[node.type]||{})},p=node.props;const feels=new Set(p.personalities||[]);
+  if(p.background)d.background=p.background;if(p.color)d.color=p.color;
+  if(p.space==='md')d.padding=(d.padding||12)+6;
+  if(p.space==='lg')d.padding=(d.padding||12)+12;
+  if(p.space==='xl')d.padding=(d.padding||12)+22;
+  if(p.rounded)d.radius=Math.max(d.radius||0,18);
+  if(p.softCorners)d.radius=Math.max(d.radius||0,26);
+  if(p.shadow==='none')d.shadow='none';
+  if(p.shadow==='soft')d.shadow='0 12px 32px rgba(15,23,42,.10)';
+  if(p.shadow==='strong')d.shadow='0 28px 74px rgba(15,23,42,.28)';
+  if(feels.has('modern')){d.radius=Math.max(d.radius||0,18);d.shadow='0 16px 42px rgba(15,23,42,.12)';}
+  if(feels.has('playful')){d.radius=Math.max(d.radius||0,24);d.shadow='0 18px 38px rgba(99,102,241,.18)';}
+  if(feels.has('luxury')){d.radius=Math.max(d.radius||0,18);d.shadow='0 28px 80px rgba(15,23,42,.20)';}
+  if(feels.has('friendly')){d.radius=Math.max(d.radius||0,18);d.shadow='0 16px 34px rgba(59,130,246,.16)';}
+  if(feels.has('calm'))d.shadow='0 18px 42px rgba(30,41,59,.12)';
+  if(feels.has('bold'))d.weight=Math.max(d.weight||600,800);
+  if(p.readable){d.size=Math.max(d.size||16,17);d.line=1.8;}
+  if(p.emphasis){d.size=(d.size||16)*1.11;d.weight=Math.max(d.weight||600,800);}
+  if(p.scale){const s=Math.max(.55,Math.min(1.6,p.scale));if(d.size)d.size*=s;if(d.padding)d.padding*=Math.min(s,1.2);if(d.radius)d.radius*=Math.min(s,1.15);}
+  return d;
+}
+
+function cssProps(n,d){
+  const out=[];
+  if(d.background)out.push(`--u-bg:${d.background}`);
+  if(d.color)out.push(`--u-color:${d.color}`);
+  if(d.radius!=null)out.push(`--u-radius:${Math.round(d.radius)}px`);
+  if(d.padding!=null)out.push(`--u-pad:${Math.round(d.padding)}px`);
+  if(d.shadow)out.push(`--u-shadow:${d.shadow}`);
+  if(d.size!=null)out.push(`--u-size:${Math.round(d.size*10)/10}px`);
+  if(d.weight!=null)out.push(`--u-weight:${d.weight}`);
+  if(d.line!=null)out.push(`--u-line:${d.line}`);
+  return out.join(';');
+}
+
+function renderNode(n,css,js,mobile){
+  const d=design(n), p=n.props, id=n.id;
+  let attrs=`id="${id}" class="u-node u-${n.type}" data-unify-type="${n.type}" style="${cssProps(n,d)}"`;
+  if(p.alignment)attrs+=` data-align="${p.alignment}"`;
+  const ev=p.events||{};
+  if(ev.hover){
+    const transforms=[];
+    if(ev.hover.lift!=null)transforms.push(`translateY(-${ev.hover.lift}px)`);
+    if(ev.hover.scale)transforms.push(`scale(${ev.hover.scale})`);
+    css.push(`#${id}:hover{${ev.hover.brightness?`filter:brightness(${ev.hover.brightness});`:''}${transforms.length?`transform:${transforms.join(' ')};`:''}}`);
+  }
+  if(ev.press?.scale)css.push(`#${id}:active{transform:scale(${ev.press.scale})}`);
+  if(p.wide)css.push(`#${id}{width:100%}`);
+  if(ev.click?.length){
+    const actions=ev.click.map(a=>`{${a.text!==undefined?`text:${json(a.text)},`:''}${a.background?`background:${json(a.background)},`:''}${a.display!==undefined?`display:${json(a.display)},`:''}}`).join(',');
+    js.push(`(function(){const el=document.getElementById(${json(id)});if(!el)return;const actions=[${actions}];el.addEventListener('click',function(){for(const a of actions){if(a.text!==undefined)this.textContent=a.text;if(a.background!==undefined)this.style.backgroundColor=a.background;if(a.display!==undefined)this.style.display=a.display;}});})();`);
+  }
+  const text=escapeHtml(p.text||'');
+  if(n.type==='page')return n.children.map(c=>renderNode(c,css,js,mobile)).join('');
+
+  if(CONTAINERS.has(n.type)){
+    const lay=p.layout||{};const dir=lay.direction||'column';
+    css.push(`#${id}{display:flex;flex-direction:${dir};gap:${n.type==='card'?18:20}px;align-items:${lay.align||'stretch'};justify-content:${lay.justify||'flex-start'}}`);
+    if(lay.wrap)css.push(`#${id}{flex-wrap:wrap}`);
+    if(lay.split?.length===2){
+      const left=n.children.find(c=>c.type===lay.split[0]);const right=n.children.find(c=>c.type===lay.split[1]&&c!==left);
+      if(left&&right){css.push(`#${id}{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center}`);css.push(`#${left.id}{grid-column:1}#${right.id}{grid-column:2}`);mobile.push(`@media(max-width:700px){#${id}{display:flex!important;flex-direction:column!important}}`);}
+    }
+    if(p.responsive?.stack||lay.direction==='row')mobile.push(`@media(max-width:650px){#${id}{flex-direction:${p.responsive?.stack?'column':'column'}!important;align-items:stretch!important}}`);
+    const inner=n.children.map(c=>renderNode(c,css,js,mobile)).join('');
+    return `<section ${attrs}>${inner}</section>`;
+  }
+  if(n.type==='heading')return `<h1 ${attrs}>${text}</h1>`;
+  if(n.type==='text')return `<p ${attrs}>${text}</p>`;
+  if(n.type==='button')return `<button ${attrs} type="button">${text}</button>`;
+  if(n.type==='image')return `<div ${attrs} role="img" aria-label="${escapeHtml(p.text||'Image')}"><div class="u-image-placeholder">🖼️<span>${text||'Image'}</span></div></div>`;
+  if(n.type==='input')return `<input ${attrs} placeholder="${text}" aria-label="${text}">`;
+  if(n.type==='link')return `<a ${attrs} href="#">${text}</a>`;
+  if(n.type==='list')return `<ul ${attrs}><li>${text}</li></ul>`;
+  return `<div ${attrs}>${text}</div>`;
+}
+
+function compile(source){
+  const parsed=parse(source), root=parsed.root, css=[],js=[],mobile=[];
+  css.push(`
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:var(--page-bg);color:var(--page-color)}
+    .u-page{min-height:100vh}
+    .u-node{box-sizing:border-box;color:var(--u-color);background:var(--u-bg);border-radius:var(--u-radius,0);padding:var(--u-pad,0);box-shadow:var(--u-shadow,none);font-size:var(--u-size,inherit);font-weight:var(--u-weight,inherit);line-height:var(--u-line,normal);transition:filter .18s ease,transform .18s ease,background-color .18s ease,color .18s ease,box-shadow .18s ease}
+    .u-card{width:min(100%,720px)}
+    .u-button{appearance:none;border:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font:inherit}
+    .u-button:focus-visible{outline:3px solid rgba(37,99,235,.35);outline-offset:3px}
+    .u-heading,.u-text{margin:0;overflow-wrap:anywhere}
+    .u-input{width:100%;border:1px solid #cbd5e1;outline:none}.u-input:focus{border-color:#60a5fa;box-shadow:0 0 0 4px rgba(96,165,250,.15)}
+    .u-link{display:inline-block;text-decoration:none}.u-list{margin:0;padding-left:22px}
+    .u-image{display:grid;place-items:center;min-height:130px}.u-image-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;opacity:.8}
+  `);
+  css.push(`.u-page{background:${root.props.background};color:${root.props.color};padding:40px 24px;display:flex;align-items:center;justify-content:center}`);
+  css.push(`.u-page[data-align="center"] .u-stage{text-align:center}`);
+  const stageLayout=root.props.layout||{};
+  css.push(`.u-stage{width:min(100%,980px);display:flex;flex-direction:${stageLayout.direction||'column'};align-items:${stageLayout.align||'center'};justify-content:${stageLayout.justify||'flex-start'};gap:20px}`);
+  if(stageLayout.wrap)css.push('.u-stage{flex-wrap:wrap}');
+  if(root.props.responsive?.stack)mobile.push('@media(max-width:650px){.u-page{padding:18px 12px}.u-stage{flex-direction:column!important;align-items:stretch!important;gap:14px}}');
+  const body=root.children.map(c=>renderNode(c,css,js,mobile)).join('');css.push(...mobile);
+  const doc=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css.join('\n')}</style></head><body><main class="u-page" style="--page-bg:${root.props.background};--page-color:${root.props.color}"><div class="u-stage">${body}</div></main><script>${js.join('\n').replace(/<\//gi,'<\\/')}<\/script></body></html>`;
+  return {parsed,doc,css,js};
+}
+
+function semantic(result){
+  const lines=['UNIFY 0.4 — SEMANTIC RESULT',''];
+  const nodes=result.parsed.nodes.filter(n=>n.type!=='page');
+  lines.push(`components: ${nodes.length}`);lines.push('');
+  function desc(n,depth){
+    const p=n.props,b=[];
+    if(p.text)b.push(`text=${JSON.stringify(p.text)}`);
+    if(p.background)b.push(`background=${p.background}`);if(p.color)b.push(`text-color=${p.color}`);
+    if(p.personalities?.length)b.push(`feel=${[...new Set(p.personalities)].join(',')}`);
+    if(p.readable)b.push('readable');if(p.emphasis)b.push('emphasis');if(p.scale)b.push(`scale=${Math.round(p.scale*100)}%`);if(p.space)b.push(`space=${p.space}`);
+    if(p.layout)b.push(`layout=${JSON.stringify(p.layout)}`);if(p.wide)b.push('wide');if(p.events?.hover)b.push(`hover=${JSON.stringify(p.events.hover)}`);if(p.events?.press)b.push(`press=${JSON.stringify(p.events.press)}`);if(p.events?.click?.length)b.push(`clicks=${JSON.stringify(p.events.click)}`);
+    lines.push(`${'  '.repeat(depth)}• ${n.type} [${n.id}]${b.length?' — '+b.join(' · '):''}`);n.children.forEach(c=>desc(c,depth+1));
+  }
+  result.parsed.root.children.forEach(n=>desc(n,0));
+  if(result.parsed.warnings.length){lines.push('','WARNINGS',...result.parsed.warnings.map(x=>'⚠ '+x));}
+  if(result.parsed.errors.length){lines.push('','ERRORS',...result.parsed.errors.map(x=>'✕ '+x));}
+  return lines.join('\n');
+}
+
+function setStatus(text,kind='good'){const el=document.getElementById('status');el.textContent=text;el.style.color=kind==='bad'?'var(--bad)':kind==='warn'?'var(--warn)':'var(--good)';}
+function run(){
+  const src=document.getElementById('editor').value;
+  try{
+    const result=compile(src);const iframe=document.getElementById('output');iframe.srcdoc=result.doc;
+    const count=result.parsed.nodes.filter(n=>n.type!=='page').length;const intent=Math.max(0,src.split(/\r?\n/).filter(x=>x.trim()&&!x.trim().startsWith('#')).length);
+    document.getElementById('stats').textContent=`${intent} intents · ${count} components`;
+    document.getElementById('semantic').textContent=semantic(result);
+    if(result.parsed.errors.length)setStatus(`${result.parsed.errors.length} error(s)`,'bad');else if(result.parsed.warnings.length)setStatus(`${result.parsed.warnings.length} warning(s)`,'warn');else setStatus('Compiled');
+  }catch(err){console.error(err);document.getElementById('semantic').textContent='Compiler error:\n'+(err?.stack||err);setStatus('Compiler error','bad');}
+}
+
+const editor=document.getElementById('editor');
+document.getElementById('run').addEventListener('click',run);
+let timer=0;editor.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(run,280)});
+document.querySelectorAll('.example').forEach(b=>b.addEventListener('click',()=>{editor.value=EXAMPLES[b.dataset.example];run();editor.focus()}));
+window.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();run()}});
+run();
+</script>
+</body>
+</html>
